@@ -1,0 +1,61 @@
+#include "Chip8.h"
+#include <iostream>
+#include <fstream>
+
+Chip8::Chip8() 
+	: randGen(std::chrono::system_clock::now().time_since_epoch().count()) {
+	randByte = std::uniform_int_distribution<int>(0, 255U);
+	
+	programCounter = ROM_START_ADDRESS;
+}
+
+void Chip8::load_rom(const char* romName) {
+	std::ifstream romFile(romName, std::ios::binary | std::ios::ate);
+
+	if (!romFile.is_open()) {
+		std::cout << "Failed to open ROM file!" << std::endl;
+		return;
+	}
+
+	// Create a buffer to hold the ROM file temporary
+	std::streampos romSize = romFile.tellg();
+	char* buffer = new char[romSize];
+
+	romFile.seekg(0, romSize);
+	romFile.read(buffer, romSize);
+	romFile.close();
+
+	for (long x = 0; x < romSize; x++) {
+		memory[ROM_START_ADDRESS + x] = buffer[x];
+	}
+	
+	delete[] buffer;
+}	
+
+void Chip8::load_fonts() {
+	const unsigned int FONTSET_SIZE = 80;
+
+	uint8_t fontSet[FONTSET_SIZE] = {
+		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+		0x20, 0x60, 0x20, 0x20, 0x70, // 1
+		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+		0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+		0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+		0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+		0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+		0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+		0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+		0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+		0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+		0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+		0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+		0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+	};
+
+	for (int x = 0; x < FONTSET_SIZE; x++) {
+		memory[FONTSET_START_ADDRESS + x] = fontSet[x];
+	}
+
+}
