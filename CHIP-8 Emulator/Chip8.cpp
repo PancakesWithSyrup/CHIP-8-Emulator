@@ -192,71 +192,201 @@ void Chip8::OP_8xy7() {
 	registers[Vx] = registers[Vy] - registers[Vx];
 }
 
-
+// SHL Vx {, Vy} - Set VF to 1 if Vx's most-siginficant byte is 1 then multiply
+// Vx by 2
 void Chip8::OP_8xyE() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	registers[15] = (registers[Vx] & 0x80) >> 7;
+	registers[Vx] <<= 1;
 }
 
+// SNE Vx, Vy - Skips the next instruction if Vx != Vy
 void Chip8::OP_9xy0() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8, Vy = (opcode & 0x00F0) >> 4;
+	if (registers[Vx] != registers[Vy]) {
+		programCounter += 2;
+	}
 }
 
+// LD I, addr - sets I = nnn
 void Chip8::OP_Annn() {
-
+	uint16_t address = opcode & 0x0FFF;
+	index = address;
 }
 
+// JP V0, addr - Jump to the address at nnn + V0
 void Chip8::OP_Bnnn() {
-
+	uint16_t address = opcode & 0x0FFF;
+	programCounter = registers[0] + address;
 }
 
+// RND Vx, byte - Set Vx = randomByte & kk
 void Chip8::OP_Cxkk() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8, byte = opcode & 0x00FF;
+	registers[Vx] = randomByte(randomGen) & byte;
 }
 
+
+// DRW Vx, Vy, nibble - Draw the sprite at memory address I at (Vx, Vy) and
+//  set VF = 1 if there is a collision
 void Chip8::OP_Dxyn() {
+	uint8_t Vx = (opcode & 0x0F00) >> 8, Vy = (opcode & 0x00F0) >> 4, height = opcode & 0x000F;
+	uint8_t xPos = registers[Vx] % VIDEO_WIDTH, yPos = registers[Vy] % VIDEO_HEIGHT;
+	registers[15] = 0;
+	for (int x = 0; x < height; x++) {
+		uint8_t spriteByte = memory[index + x];
+		for (int y = 0; y < 8; y++) {
+			uint8_t spritePixel = spriteByte & (0x80 >> y);
+			uint32_t* screenPixel = &video[(yPos + x) * VIDEO_WIDTH + (xPos + y)];
 
+			if (spritePixel)
+			{
+				// Screen pixel also on - collision
+				if (*screenPixel == 0xFFFFFFFF)
+				{
+					registers[15] = 1;
+				}
+
+				// Effectively XOR with the sprite pixel
+				*screenPixel ^= 0xFFFFFFFF;
+			}
+		}
+	}
 }
 
+// SKP Vx - Skips the next instruction if a key with the value in Vx is pressed
 void Chip8::OP_Ex9E() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8, key = registers[Vx];
+	if (keys[key]) {
+		programCounter += 2;
+	}
 }
 
+// SKNP Vx - Skips the next instruction if a key with the value in Vx is not pressed
 void Chip8::OP_ExA1() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8, key = registers[Vx];
+	if (!keys[key]) {
+		programCounter += 2;
+	}
 }
 
+// LD Vx, DT - Set Vx to the delay timer value
 void Chip8::OP_Fx07() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	registers[Vx] = delayTimer;
 }
 
+// LD Vx, K - Wait for a key press then store the key value in Vx
 void Chip8::OP_Fx0A() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	if (keys[0]) {
+		registers[Vx] = 0;
+	}
+	else if (keys[1]) {
+		registers[Vx] = 1;
+	}
+	else if (keys[2]) {
+		registers[Vx] = 2;
+	}
+	else if (keys[3]) {
+		registers[Vx] = 3;
+	}
+	else if (keys[4]) {
+		registers[Vx] = 4;
+	}
+	else if (keys[5]) {
+		registers[Vx] = 5;
+	}
+	else if (keys[6]) {
+		registers[Vx] = 6;
+	}
+	else if (keys[7]) {
+		registers[Vx] = 7;
+	}
+	else if (keys[8]) {
+		registers[Vx] = 8;
+	}
+	else if (keys[9]) {
+		registers[Vx] = 9;
+	}
+	else if (keys[10]) {
+		registers[Vx] = 10;
+	}
+	else if (keys[11]) {
+		registers[Vx] = 11;
+	}
+	else if (keys[12]) {
+		registers[Vx] = 12;
+	}
+	else if (keys[13]) {
+		registers[Vx] = 13;
+	}
+	else if (keys[14]) {
+		registers[Vx] = 14;
+	}
+	else if (keys[15]) {
+		registers[Vx] = 15;
+	}
+	else {
+		// Decrement the program counter by 2 to rerun this instruction if nothing
+		// is pressed
+		programCounter -= 2;
+	}
 }
 
+// LD DT, Vx - Sets the delay time to Vx
 void Chip8::OP_Fx15() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	delayTimer = registers[Vx];
 }
 
+// LD ST, Vx - Sets sound timer to Vx
 void Chip8::OP_Fx18() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	soundTimer = registers[Vx];
 }
 
-void Chip8::OP_1E() {
-
+// ADD I, Vx - Sets index += Vx
+void Chip8::OP_Fx1E() {
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	index += registers[Vx];
 }
 
+// LD F, Vx - Sets index to the sprite location for the digit in Vx
 void Chip8::OP_Fx29() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8, digit = registers[Vx];
+	// Each digit is 5 bytes
+	index = FONTSET_START_ADDRESS + (5 * digit);
 }
 
+// LD B, Vx - Store the binary-coded decimal version of Vx in I, I+1, I+2
 void Chip8::OP_Fx33() {
+	uint8_t Vx = (opcode & 0x0F00) >> 8, value = registers[Vx];
+	// Ones-place
+	memory[index + 2] = value % 10;
+	value /= 10;
+
+	// Tens-place
+	memory[index + 1] = value % 10;
+	value /= 10;
+
+	// Hundreds-place
+	memory[index] = value % 10;
 
 }
 
+// LD [I], Vx - Store registers V0 - Vx in memory at [I]
 void Chip8::OP_Fx55() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	for (int i = 0; i <= Vx; i++) {
+		memory[index = i] = registers[i];
+	}
 }
 
+// LD Vx, [I] - Read registers V0 - Vx in memory at [I]
 void Chip8::OP_Fx65() {
-
+	uint8_t Vx = (opcode & 0x0F00) >> 8;
+	for (int i = 0; i <= Vx; i++) {
+		registers[i] = memory[index + i];
+	}
 }

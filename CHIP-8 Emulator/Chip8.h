@@ -5,6 +5,8 @@
 
 const unsigned int ROM_START_ADDRESS = 0x200;
 const unsigned int FONTSET_START_ADDRESS = 0x50;
+const unsigned int VIDEO_HEIGHT = 32;
+const unsigned int VIDEO_WIDTH = 64;
 
 class Chip8 {
 public:
@@ -12,6 +14,7 @@ public:
 private:
 	uint16_t opcode;
 
+	// 1-15 are general purpose, 16 is flags
 	uint8_t registers[16];
 	uint16_t memory[4096];
 	uint16_t programCounter;
@@ -61,7 +64,7 @@ private:
 	void OP_Fx0A();
 	void OP_Fx15();
 	void OP_Fx18();
-	void OP_1E();
+	void OP_Fx1E();
 	void OP_Fx29();
 	void OP_Fx33();
 	void OP_Fx55();
