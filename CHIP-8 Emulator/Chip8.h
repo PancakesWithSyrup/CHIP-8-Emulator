@@ -32,6 +32,7 @@ private:
 	std::default_random_engine randomGen;
 	std::uniform_int_distribution<int> randomByte;
 
+	void cycle();
 	void load_rom(const char* romName);
 	void load_fonts();
 
