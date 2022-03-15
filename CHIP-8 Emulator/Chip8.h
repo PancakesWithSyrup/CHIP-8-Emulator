@@ -11,7 +11,7 @@ const unsigned int VIDEO_WIDTH = 64;
 class Chip8 {
 public:
 	Chip8();
-private:
+
 	uint16_t opcode;
 
 	// 1-15 are general purpose, 16 is flags
